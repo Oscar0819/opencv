@@ -82,7 +82,7 @@ class MainActivity : AppCompatActivity() {
         for (contour in contours) {
             val area = Imgproc.contourArea(contour)
             if (area > 1000) { // 너무 작은 윤곽선은 무시
-                val curve = MatOfPoint2f()
+                val curve = MatOfPoint2f(*contour.toArray())
                 val approxCurve = MatOfPoint2f()
                 val peri = Imgproc.arcLength(curve, true)
                 Imgproc.approxPolyDP(curve, approxCurve, 0.02 * peri, true) // 윤곽선 근사화
@@ -103,6 +103,8 @@ class MainActivity : AppCompatActivity() {
             // URI를 비트맵으로 변환
             val inputStream = contentResolver.openInputStream(it)
             val bitmap = BitmapFactory.decodeStream(inputStream)
+
+            binding.imageView.setImageBitmap(bitmap)
 
             // 문서 가장자리 좌표 찾기 함수 호출
             val cornerPoints = findDocumentCorners(bitmap)
