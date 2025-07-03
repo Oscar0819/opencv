@@ -40,6 +40,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":opencv"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -50,5 +51,5 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    implementation("com.quickbirdstudios:opencv:4.5.3.0")
+//    implementation("com.quickbirdstudios:opencv:4.5.3.0")
 }
