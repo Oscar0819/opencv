@@ -16,6 +16,7 @@ import org.opencv.android.Utils
 import org.opencv.core.Mat
 import org.opencv.core.MatOfPoint
 import org.opencv.core.MatOfPoint2f
+import org.opencv.core.Point
 import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 
@@ -52,7 +53,8 @@ class MainActivity : AppCompatActivity() {
         galleryLauncher.launch("image/*")
     }
 
-    private fun findDocumentCorners(bitmap: Bitmap): List<org.opencv.core.Point>? {
+    // 연산량이 많으니 백그라운드 스레드로 호출하기
+    private fun findDocumentCorners(bitmap: Bitmap): List<Point>? {
         val mat = Mat()
         Utils.bitmapToMat(bitmap, mat)
 
@@ -63,7 +65,49 @@ class MainActivity : AppCompatActivity() {
         Imgproc.GaussianBlur(grayMat, blurredMat, Size(5.0, 5.0), 0.0) // 노이즈 제거
 
         val edgesMat = Mat()
-        Imgproc.Canny(blurredMat, edgesMat, 75.0, 200.0) // 가장자리 감지
+        Imgproc.Canny(blurredMat, edgesMat, 50.0, 150.0) // 가장자리 감지
+
+//        val lines = Mat()
+//        Imgproc.HoughLinesP(
+//            edgesMat,           // 엣지 이미지
+//            lines,              // 결과 선 저장 Mat
+//            1.0,           // rho (거리) 해상도
+//            Math.PI / 180,// theta (각도) 해상도
+//            80,        // threshold (선을 감지하기 위한 최소 교차점 수)
+//            50.0,  // minLineLength (최소 선 길이)
+//            10.0     // maxLineGap (선 위의 점들 사이의 최대 간격)
+//        )
+//
+//        val lineList = mutableListOf<Pair<Point, Point>>()
+//
+//        for (i in 0 until lines.rows()) {
+//            val line = lines.get(i, 0)
+//            val x1 = line[0]
+//            val y1 = line[1]
+//            val x2 = line[2]
+//            val y2 = line[3]
+//
+//            // 문자 구분선은 대부분 수평/수직이므로, 이를 필터합니다.
+//            val angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI
+//            val tolerance = 5.0 // 5도 이내의 오차 허용
+//
+//            // 수평선 (angle이 0도 또는 180도에 가까움)
+//            if (Math.abs(angle) < tolerance || Math.abs(angle - 180) < tolerance) {
+//                lineList.add(Pair(Point(x1,y1), Point(x2, y2)))
+//            }
+//            // 수직선 (angle이 90도 또는 -90도에 가까움)
+//            else if (Math.abs(Math.abs(angle) - 90) < tolerance) {
+//                lineList.add(Pair(Point(x1,y1), Point(x2, y2)))
+//            }
+//        }
+//
+//        mat.release()
+//        grayMat.release()
+//        blurredMat.release()
+//        edgesMat.release()
+//        lines.release()
+//
+//        return lineList
 
         val contours = mutableListOf<MatOfPoint>()
         val hierarchy = Mat()
