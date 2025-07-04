@@ -138,6 +138,12 @@ class MainActivity : AppCompatActivity() {
         // 파라미터는 이미지에 따라 조절
         Imgproc.Canny(blurredMat, edgesMat, 75.0, 200.0) // 가장자리 감지
 
+        // 닫힘 연산 추가
+        // 닫힘 연산에 사용할 커널 생성. 커널 크기가 틈을 메우는 강도를 결정합니다.
+        val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(5.0, 5.0))
+        // 닫힘 연산을 적용하여 끊어진 엣지를 연결합니다.
+        Imgproc.morphologyEx(edgesMat, edgesMat, Imgproc.MORPH_CLOSE, kernel)
+
         val contours = mutableListOf<MatOfPoint>()
         val hierarchy = Mat()
         Imgproc.findContours(
