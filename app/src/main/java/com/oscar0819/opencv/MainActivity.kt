@@ -191,8 +191,9 @@ class MainActivity : AppCompatActivity() {
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let {
             // URI를 비트맵으로 변환
-            val inputStream = contentResolver.openInputStream(it)
-            val bitmap = BitmapFactory.decodeStream(inputStream)
+//            val inputStream = contentResolver.openInputStream(it)
+//            val bitmap = BitmapFactory.decodeStream(inputStream)
+            val bitmap = getCorrectlyOrientedBitmap(context = this@MainActivity, it) ?: return@registerForActivityResult
 
             binding.ecv.setImageBitmap(bitmap)
 
