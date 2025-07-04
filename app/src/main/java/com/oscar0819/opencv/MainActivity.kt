@@ -144,6 +144,9 @@ class MainActivity : AppCompatActivity() {
             edgesMat, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE
         ) // 윤곽선 찾기
 
+        // 최소 면적을 전체 이미지의 일정 비율(예: 5%) 이상으로 설정
+        val minAreaThreshold = mat.total() * 0.025 // mat.total() = 가로 * 세로 픽셀 수
+
         if (contours.isEmpty()) {
             mat.release()
             grayMat.release()
@@ -159,7 +162,7 @@ class MainActivity : AppCompatActivity() {
 
         for (contour in contours) {
             val area = Imgproc.contourArea(contour)
-            if (area > 1000) { // 너무 작은 윤곽선은 무시
+            if (area > minAreaThreshold) { // 너무 작은 윤곽선은 무시
                 val curve = MatOfPoint2f(*contour.toArray())
                 val approxCurve = MatOfPoint2f()
                 val peri = Imgproc.arcLength(curve, true)
