@@ -3,6 +3,7 @@ package com.oscar0819.opencv
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.PointF
+import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -11,7 +12,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
 import com.oscar0819.opencv.databinding.ActivityMainBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.opencv.android.OpenCVLoader
 import org.opencv.android.Utils
 import org.opencv.core.Mat
@@ -20,6 +25,8 @@ import org.opencv.core.MatOfPoint2f
 import org.opencv.core.Point
 import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 class MainActivity : AppCompatActivity() {
 
@@ -47,6 +54,10 @@ class MainActivity : AppCompatActivity() {
 
         binding.button.setOnClickListener {
             openGallery()
+        }
+
+        binding.button2.setOnClickListener {
+            onConfirmButtonClick()
         }
     }
 
@@ -190,8 +201,79 @@ class MainActivity : AppCompatActivity() {
                 // TODO: 찾은 좌표를 사용하여 이미지 위에 그리거나 다른 작업 수행
 
                 binding.ecv.setCorners(cornerPoints)
+
+
             } else {
                 Log.d("DocumentCorners", "Could not find document corners.")
+            }
+        }
+    }
+
+    fun cropAndStraightenImage(originalBitmap: Bitmap, finalCorners: List<PointF>): Bitmap {
+        // 1. 원본 이미지 Mat 생성
+        val inputMat = Mat()
+        Utils.bitmapToMat(originalBitmap, inputMat)
+
+        // 2. 소스 꼭짓점(수정된 4개)과 목적지 꼭짓점(결과 이미지의 4개) 정의
+        val sourcePoints = MatOfPoint2f()
+        sourcePoints.fromList(finalCorners.map { Point(it.x.toDouble(), it.y.toDouble()) })
+
+        // 3. 결과 이미지의 크기 계산
+        // 좌상, 우상, 좌하, 우하 꼭짓점을 찾습니다.
+        val tl = finalCorners[0] // 이미 정렬되었으므로 인덱스로 접근 가능 (정렬 방식에 따라 조정 필요)
+        val tr = finalCorners[1]
+        val br = finalCorners[2]
+        val bl = finalCorners[3]
+
+        val widthA = sqrt((br.x - bl.x).pow(2) + (br.y - bl.y).pow(2).toDouble())
+        val widthB = sqrt((tr.x - tl.x).pow(2) + (tr.y - tl.y).pow(2).toDouble())
+        val maxWidth = maxOf(widthA, widthB)
+
+        val heightA = sqrt((tr.x - br.x).pow(2) + (tr.y - br.y).pow(2).toDouble())
+        val heightB = sqrt((tl.x - bl.x).pow(2) + (tl.y - bl.y).pow(2).toDouble())
+        val maxHeight = maxOf(heightA, heightB)
+
+        val destSize = Size(maxWidth, maxHeight)
+
+        val destPoints = MatOfPoint2f(
+            Point(0.0, 0.0),                                // 좌상
+            Point(destSize.width - 1, 0.0),                 // 우상
+            Point(destSize.width - 1, destSize.height - 1), // 우하
+            Point(0.0, destSize.height - 1)                 // 좌하
+        )
+
+        // 4. 원근 변환 행렬 계산
+        val perspectiveTransform = Imgproc.getPerspectiveTransform(sourcePoints, destPoints)
+
+        // 5. 원근 변환 적용
+        val outputMat = Mat()
+        Imgproc.warpPerspective(inputMat, outputMat, perspectiveTransform, destSize)
+
+        // 6. 결과 Mat를 Bitmap으로 변환
+        val outputBitmap = Bitmap.createBitmap(outputMat.cols(), outputMat.rows(), Bitmap.Config.ARGB_8888)
+        Utils.matToBitmap(outputMat, outputBitmap)
+
+        inputMat.release()
+        outputMat.release()
+        sourcePoints.release()
+        destPoints.release()
+        perspectiveTransform.release()
+
+        return outputBitmap
+    }
+
+    private fun onConfirmButtonClick() {
+        val ecv = binding.ecv
+        val finalCorners = ecv.getFinalCorners()
+        if (finalCorners.size == 4) {
+            val originalBitmap = (ecv.drawable as BitmapDrawable).bitmap
+
+            lifecycleScope.launch(Dispatchers.Default) {
+                val croppedBitmap = cropAndStraightenImage(originalBitmap, finalCorners)
+
+                withContext(Dispatchers.Main) {
+                    ecv.setImageBitmap(croppedBitmap)
+                }
             }
         }
     }
