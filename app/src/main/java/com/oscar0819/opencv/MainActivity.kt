@@ -1,5 +1,6 @@
 package com.oscar0819.opencv
 
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.PointF
@@ -58,6 +59,10 @@ class MainActivity : AppCompatActivity() {
 
         binding.button2.setOnClickListener {
             onConfirmButtonClick()
+        }
+
+        binding.button3.setOnClickListener {
+            startActivity(Intent(this@MainActivity, DebugActivity::class.java))
         }
     }
 
@@ -136,7 +141,7 @@ class MainActivity : AppCompatActivity() {
 
         val edgesMat = Mat()
         // 파라미터는 이미지에 따라 조절
-        Imgproc.Canny(blurredMat, edgesMat, 75.0, 200.0) // 가장자리 감지
+        Imgproc.Canny(blurredMat, edgesMat, 50.0, 200.0) // 가장자리 감지
 
         // 닫힘 연산 추가
         // 닫힘 연산에 사용할 커널 생성. 커널 크기가 틈을 메우는 강도를 결정합니다.
@@ -151,7 +156,7 @@ class MainActivity : AppCompatActivity() {
         ) // 윤곽선 찾기
 
         // 최소 면적을 전체 이미지의 일정 비율(예: 5%) 이상으로 설정
-        val minAreaThreshold = mat.total() * 0.025 // mat.total() = 가로 * 세로 픽셀 수
+        val minAreaThreshold = mat.total() * 0.05 // mat.total() = 가로 * 세로 픽셀 수
 
         if (contours.isEmpty()) {
             mat.release()
