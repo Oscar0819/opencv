@@ -18,19 +18,19 @@ class EditableCornerView @JvmOverloads constructor(
 
     private var corners: List<PointF> = emptyList()
 
-    private val linePaint = Paint().apply {
+    private var linePaint = Paint().apply {
         color = Color.GREEN
         strokeWidth = 8f
         style = Paint.Style.STROKE
     }
 
-    private val cornerPaint = Paint().apply {
+    private var cornerPaint = Paint().apply {
         color = Color.RED
         strokeWidth = 30f
         style = Paint.Style.FILL
     }
 
-    // 외부에서 꼮짓점 목록을 설정하는 함수
+    // 외부에서 꼭짓점 목록을 설정하는 함수
     fun setCorners(detectedCorners: List<PointF>) {
         // 꼭짓점을 시계 방향 또는 반시계 방향을 정렬하는 것이 중요
         this.corners = sortCorners(detectedCorners)

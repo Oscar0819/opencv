@@ -139,9 +139,35 @@ class MainActivity : AppCompatActivity() {
         val blurredMat = Mat()
         Imgproc.GaussianBlur(grayMat, blurredMat, Size(5.0, 5.0), 0.0) // 노이즈 제거
 
+        /**
+         * Otsu의 이진화를 사용하여 최적의 임계값 계산
+         * threshold 함수의 반환값이 Otsu가 계산한 임계값
+         * 세번째 인자(thresh)는 0으로 둬도 Otsu 플래그 때문에 자동으로 계산됨.
+         * 네번째 인자(maxval)는 255로 설정.
+         * 이진화된 이미지를 저장할 dummyMat를 추가. 이 Mat 자체는 사용하지 않음.
+         */
+        val dummyMat = Mat()
+        val otsuThreshold = Imgproc.threshold(
+            blurredMat,
+            dummyMat,
+            0.0,
+            255.0,
+            Imgproc.THRESH_BINARY or Imgproc.THRESH_OTSU
+        )
+        dummyMat.release() // 더 이상 필요 없으므로 메모리 해제
+
+        Log.d("Otsu", "자동으로 계산된 최적 임계값 : $otsuThreshold")
+
+        val cannyThreshold1 = otsuThreshold * 0.5 // 낮은 임계값은 Otsu 값의 절반
+        val cannyThreshold2 = otsuThreshold       // 높은 임계값은 Otsu 값 자체
+
+        Log.d("CannyParams", "동적 설정된 Canny 임계값 : $cannyThreshold1, $cannyThreshold2")
+
         val edgesMat = Mat()
         // 파라미터는 이미지에 따라 조절
-        Imgproc.Canny(blurredMat, edgesMat, 50.0, 200.0) // 가장자리 감지
+//        Imgproc.Canny(blurredMat, edgesMat, 50.0, 200.0) // 가장자리 감지
+//        Imgproc.Canny(blurredMat, edgesMat, 10.0, 100.0, 3, true) // 가장자리 감지
+        Imgproc.Canny(blurredMat, edgesMat, cannyThreshold1, cannyThreshold2)
 
         // 닫힘 연산 추가
         // 닫힘 연산에 사용할 커널 생성. 커널 크기가 틈을 메우는 강도를 결정합니다.
@@ -216,8 +242,6 @@ class MainActivity : AppCompatActivity() {
                 // TODO: 찾은 좌표를 사용하여 이미지 위에 그리거나 다른 작업 수행
 
                 binding.ecv.setCorners(cornerPoints)
-
-
             } else {
                 Log.d("DocumentCorners", "Could not find document corners.")
             }
