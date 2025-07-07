@@ -97,8 +97,10 @@ class DebugActivity : AppCompatActivity() {
             val src = Mat()
             Utils.bitmapToMat(bitmapToProcess, src)
 
+            val (resizedMat, scale) = resizeMatWithScale(src)
+
             val gray = Mat()
-            Imgproc.cvtColor(src, gray, Imgproc.COLOR_BGR2GRAY)
+            Imgproc.cvtColor(resizedMat, gray, Imgproc.COLOR_BGR2GRAY)
 
             val blurred = Mat()
             if (blurKernelSize > 0) {
@@ -135,7 +137,7 @@ class DebugActivity : AppCompatActivity() {
                 Imgproc.findContours(closed, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE)
 
                 // 원본 컬러 이미지에 그리기 위해 src를 복사
-                src.copyTo(resultMat)
+                resizedMat.copyTo(resultMat)
                 for (contour in contours) {
                     val area = Imgproc.contourArea(contour)
                     // 최소 면적 기준 (여기서도 조절 가능하게 만들 수 있음)
@@ -157,6 +159,7 @@ class DebugActivity : AppCompatActivity() {
 
             // 메모리 해제
             src.release()
+            resizedMat.release()
             gray.release()
             blurred.release()
             canny.release()

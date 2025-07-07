@@ -134,21 +134,7 @@ class MainActivity : AppCompatActivity() {
         val mat = Mat()
         Utils.bitmapToMat(bitmap, mat)
 
-        val width = bitmap.width
-        val height = bitmap.height
-        val maxLength = 1000
-
-        val scale = if (width > height) {
-            maxLength.toDouble() / width
-        } else {
-            maxLength.toDouble() / height
-        }
-
-        val newWidth = (width * scale).toInt()
-        val newHeight = (height * scale).toInt()
-
-        val resizedMat = Mat()
-        Imgproc.resize(mat, resizedMat, Size(newWidth.toDouble(), newHeight.toDouble()))
+        val (resizedMat, scale) = resizeMatWithScale(mat)
 
         val grayMat = Mat()
         Imgproc.cvtColor(resizedMat, grayMat, Imgproc.COLOR_BGR2GRAY) // 흑백으로 변환

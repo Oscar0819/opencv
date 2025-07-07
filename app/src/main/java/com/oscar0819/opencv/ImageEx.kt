@@ -2,6 +2,7 @@ package com.oscar0819.opencv
 
 import android.graphics.Bitmap
 import org.opencv.core.Mat
+import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 
 // TODO 확인하기 이상항
@@ -20,20 +21,21 @@ fun getDynamicBlurKernelSize(imageWidth: Int): Int {
     return oddSize.coerceIn(3, 15)
 }
 
-//fun resizeMatKeepAspectRatio(bitmap: Bitmap, maxLength: Int): Bitmap {
-//    val width = bitmap.width
-//    val height = bitmap.height
-//
-//    val scale = if (width > height) {
-//        maxLength.toDouble() / width
-//    } else {
-//        maxLength.toDouble() / height
-//    }
-//
-//    val newWidth = (width * scale).toInt()
-//    val newHeight = (height * scale).toInt()
-//
-//    val resizedMat = Mat()
-//    return Imgproc.resize(mat)
-//}
+fun resizeMatWithScale(mat: Mat, maxLength: Int = 1000): Pair<Mat, Double> {
+    val width = mat.width()
+    val height = mat.height()
+
+    val scale = if (width > height) {
+        maxLength.toDouble() / width
+    } else {
+        maxLength.toDouble() / height
+    }
+
+    val newWidth = (width * scale).toInt()
+    val newHeight = (height * scale).toInt()
+
+    val resizedMat = Mat()
+    Imgproc.resize(mat, resizedMat, Size(newWidth.toDouble(), newHeight.toDouble()))
+    return Pair(resizedMat, scale)
+}
 
