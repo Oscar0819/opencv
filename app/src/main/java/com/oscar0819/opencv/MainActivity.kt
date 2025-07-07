@@ -136,8 +136,11 @@ class MainActivity : AppCompatActivity() {
         val grayMat = Mat()
         Imgproc.cvtColor(mat, grayMat, Imgproc.COLOR_BGR2GRAY) // 흑백으로 변환
 
+        val kernelSize = getDynamicBlurKernelSize(mat.width())
+        Log.d("BlurParams", "동적 설정된 블러 커널 크기 : $kernelSize")
+
         val blurredMat = Mat()
-        Imgproc.GaussianBlur(grayMat, blurredMat, Size(5.0, 5.0), 0.0) // 노이즈 제거
+        Imgproc.GaussianBlur(grayMat, blurredMat, Size(kernelSize.toDouble(), kernelSize.toDouble()), 0.0) // 노이즈 제거
 
         /**
          * Otsu의 이진화를 사용하여 최적의 임계값 계산
@@ -171,9 +174,9 @@ class MainActivity : AppCompatActivity() {
 
         // 닫힘 연산 추가
         // 닫힘 연산에 사용할 커널 생성. 커널 크기가 틈을 메우는 강도를 결정합니다.
-        val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(5.0, 5.0))
+//        val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(5.0, 5.0))
         // 닫힘 연산을 적용하여 끊어진 엣지를 연결합니다.
-        Imgproc.morphologyEx(edgesMat, edgesMat, Imgproc.MORPH_CLOSE, kernel)
+//        Imgproc.morphologyEx(edgesMat, edgesMat, Imgproc.MORPH_CLOSE, kernel)
 
         val contours = mutableListOf<MatOfPoint>()
         val hierarchy = Mat()
