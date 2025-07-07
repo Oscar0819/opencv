@@ -1,5 +1,10 @@
 package com.oscar0819.opencv
 
+import android.graphics.Bitmap
+import org.opencv.core.Mat
+import org.opencv.imgproc.Imgproc
+
+// TODO 확인하기 이상항
 fun getDynamicBlurKernelSize(imageWidth: Int): Int {
     // 기존 해상도
     val baseResolution = 1000.0
@@ -14,3 +19,21 @@ fun getDynamicBlurKernelSize(imageWidth: Int): Int {
 
     return oddSize.coerceIn(3, 15)
 }
+
+//fun resizeMatKeepAspectRatio(bitmap: Bitmap, maxLength: Int): Bitmap {
+//    val width = bitmap.width
+//    val height = bitmap.height
+//
+//    val scale = if (width > height) {
+//        maxLength.toDouble() / width
+//    } else {
+//        maxLength.toDouble() / height
+//    }
+//
+//    val newWidth = (width * scale).toInt()
+//    val newHeight = (height * scale).toInt()
+//
+//    val resizedMat = Mat()
+//    return Imgproc.resize(mat)
+//}
+

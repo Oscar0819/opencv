@@ -134,14 +134,30 @@ class MainActivity : AppCompatActivity() {
         val mat = Mat()
         Utils.bitmapToMat(bitmap, mat)
 
-        val grayMat = Mat()
-        Imgproc.cvtColor(mat, grayMat, Imgproc.COLOR_BGR2GRAY) // 흑백으로 변환
+        val width = bitmap.width
+        val height = bitmap.height
+        val maxLength = 1000
 
-        val kernelSize = getDynamicBlurKernelSize(mat.width())
+        val scale = if (width > height) {
+            maxLength.toDouble() / width
+        } else {
+            maxLength.toDouble() / height
+        }
+
+        val newWidth = (width * scale).toInt()
+        val newHeight = (height * scale).toInt()
+
+        val resizedMat = Mat()
+        Imgproc.resize(mat, resizedMat, Size(newWidth.toDouble(), newHeight.toDouble()))
+
+        val grayMat = Mat()
+        Imgproc.cvtColor(resizedMat, grayMat, Imgproc.COLOR_BGR2GRAY) // 흑백으로 변환
+
+        val kernelSize = getDynamicBlurKernelSize(resizedMat.width())
         Log.d("BlurParams", "동적 설정된 블러 커널 크기 : $kernelSize")
 
         val blurredMat = Mat()
-        Imgproc.GaussianBlur(grayMat, blurredMat, Size(kernelSize.toDouble(), kernelSize.toDouble()), 0.0) // 노이즈 제거
+        Imgproc.GaussianBlur(grayMat, blurredMat, Size(5.0, 5.0), 0.0) // 노이즈 제거
 
         /**
          * Otsu의 이진화를 사용하여 최적의 임계값 계산
@@ -175,7 +191,7 @@ class MainActivity : AppCompatActivity() {
 
         // 닫힘 연산 추가
         // 닫힘 연산에 사용할 커널 생성. 커널 크기가 틈을 메우는 강도를 결정합니다.
-        val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(kernelSize.toDouble(), kernelSize.toDouble()))
+        val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(5.0, 5.0))
         // 닫힘 연산을 적용하여 끊어진 엣지를 연결합니다.
         Imgproc.morphologyEx(edgesMat, edgesMat, Imgproc.MORPH_CLOSE, kernel)
 
@@ -186,14 +202,16 @@ class MainActivity : AppCompatActivity() {
         ) // 윤곽선 찾기
 
         // 최소 면적을 전체 이미지의 일정 비율(예: 5%) 이상으로 설정
-        val minAreaThreshold = mat.total() * 0.05 // mat.total() = 가로 * 세로 픽셀 수
+        val minAreaThreshold = resizedMat.width() * resizedMat.height() * 0.05 // mat.total() = 가로 * 세로 픽셀 수
 
         if (contours.isEmpty()) {
             mat.release()
+            resizedMat.release()
             grayMat.release()
             blurredMat.release()
             edgesMat.release()
             hierarchy.release()
+            kernel.release()
             return null
         }
 
@@ -209,37 +227,6 @@ class MainActivity : AppCompatActivity() {
                 val peri = Imgproc.arcLength(curve, true)
                 Imgproc.approxPolyDP(curve, approxCurve, 0.02 * peri, true) // 윤곽선 근사화
 
-                // 사각형 유사도 점수 (Rectangularity Score) = 윤곽선의 면적 / 블록 껍질의 면적
-
-                // 꼭짓점이 4개가 아니더라도, 어느정도 사각형에 가까우면 후보로 인정.
-//                if (approxCurve.total() in 4..8) {
-//                    // 블록 껍질(Convex Hull) 계산
-//                    val hullMatOfPoint = MatOfPoint()
-//                    val hullMatOfInt = MatOfInt()
-//                    Imgproc.convexHull(MatOfPoint(*approxCurve.toArray()), hullMatOfInt)
-//
-//                    // convexHull은 점의 인덱스를 반환하므로, 실제 점으로 변환해야 함
-//                    val hullPoints = hullMatOfInt.toList().map { approxCurve.toList()[it] }
-//
-//                    hullMatOfPoint.fromList(hullPoints)
-//
-//                    val hullArea = Imgproc.contourArea(hullMatOfPoint)
-//
-//                    // 사각형 유사도 점수 계산
-//                    // hullArea 0인 경우를 방지
-//                    val score = if (hullArea > 0) area / hullArea else 0.0
-//
-//                    if (score > 0.85 && score > maxArea) {
-//                        // 새로운 것을 할당하기 전에, 기존의 biggestContour가 있다면 먼저 해제
-//                        biggestContour?.release()
-//
-//                        maxArea = area
-//                        biggestContour = MatOfPoint(*approxCurve.toArray())
-//                    }
-//
-//                    hullMatOfPoint.release()
-//                    hullMatOfInt.release()
-//                }
                 // 근사화된 윤곽선의 꼭짓점이 4개이면 사각형이므로 후보로 선정
                 if (approxCurve.total() == 4L && area > maxArea) {
                     biggestContour?.release()
@@ -254,12 +241,21 @@ class MainActivity : AppCompatActivity() {
         }
 
         mat.release()
+        resizedMat.release()
         grayMat.release()
         blurredMat.release()
         edgesMat.release()
         hierarchy.release()
+        kernel.release()
 
-        return biggestContour?.toList()?.map { PointF(it.x.toFloat(), it.y.toFloat()) }
+        val finalPoints = biggestContour?.toList()?.map {
+            PointF(
+                it.x.toFloat() / scale.toFloat(),
+                it.y.toFloat() / scale.toFloat())
+        }
+        biggestContour?.release()
+
+        return finalPoints
     }
 
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
