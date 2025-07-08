@@ -129,9 +129,97 @@ class MainActivity : AppCompatActivity() {
         return lineList
     }
 
+    private fun findDocumentCorners(bitmap: Bitmap): List<PointF>? {
+        val mat = Mat()
+        Utils.bitmapToMat(bitmap, mat)
+
+        val (resizedMat, scale) = resizeMatWithScale(mat)
+
+        val grayMat = Mat()
+        Imgproc.cvtColor(resizedMat, grayMat, Imgproc.COLOR_BGR2GRAY)
+
+        // 블러를 끄거나 아주 약하게?
+//        val blurredMat = Mat()
+//        Imgproc.GaussianBlur(grayMat, blurredMat, Size(3.0, 3.0), 0.0)
+//        grayMat.copyTo(blurredMat)
+
+        // Otsu 대신 고정 임계값 사용
+        val edgesMat = Mat()
+        Imgproc.Canny(grayMat, edgesMat, 50.0, 150.0)
+
+        /**
+         * 닫힘 연산은 일단 유지?
+         * 약하게 적용해봄
+         */
+//        val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(5.0, 5.0))
+//        Imgproc.morphologyEx(edgesMat, edgesMat, Imgproc.MORPH_CLOSE, kernel)
+
+        val contours = mutableListOf<MatOfPoint>()
+        val hierarchy = Mat()
+        Imgproc.findContours(
+            edgesMat, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE
+        ) // 윤곽선 찾기
+
+        // 최소 면적을 전체 이미지의 일정 비율(예: 5%) 이상으로 설정
+        val minAreaThreshold = resizedMat.width() * resizedMat.height() * 0.05 // mat.total() = 가로 * 세로 픽셀 수
+
+        if (contours.isEmpty()) {
+            mat.release()
+            resizedMat.release()
+            grayMat.release()
+//            blurredMat.release()
+            edgesMat.release()
+            hierarchy.release()
+//            kernel.release()
+            return null
+        }
+
+        // 가장 큰 윤곽선을 찾기 위한 변수
+        var maxArea = -1.0
+        var biggestContour: MatOfPoint? = null
+
+        for (contour in contours) {
+            val area = Imgproc.contourArea(contour)
+            if (area > minAreaThreshold) { // 너무 작은 윤곽선은 무시
+                val curve = MatOfPoint2f(*contour.toArray())
+                val approxCurve = MatOfPoint2f()
+                val peri = Imgproc.arcLength(curve, true)
+                Imgproc.approxPolyDP(curve, approxCurve, 0.02 * peri, true) // 윤곽선 근사화
+
+                // 근사화된 윤곽선의 꼭짓점이 4개이면 사각형이므로 후보로 선정
+                if (approxCurve.total() == 4L && area > maxArea) {
+                    biggestContour?.release()
+                    maxArea = area
+                    biggestContour = MatOfPoint(*approxCurve.toArray())
+                }
+
+                curve.release()
+                approxCurve.release()
+            }
+            contour.release()
+        }
+
+        mat.release()
+        resizedMat.release()
+        grayMat.release()
+//        blurredMat.release()
+        edgesMat.release()
+        hierarchy.release()
+//        kernel.release()
+
+        val finalPoints = biggestContour?.toList()?.map {
+            PointF(
+                it.x.toFloat() / scale.toFloat(),
+                it.y.toFloat() / scale.toFloat())
+        }
+        biggestContour?.release()
+
+        return finalPoints
+    }
+
     // gray - blur - canny(otsu) - approxPolyDP
     // 연산량이 많으니 백그라운드 스레드로 호출하기
-    private fun findDocumentCorners(bitmap: Bitmap): List<PointF>? {
+    private fun findDocumentCorners2(bitmap: Bitmap): List<PointF>? {
         val mat = Mat()
         Utils.bitmapToMat(bitmap, mat)
 
