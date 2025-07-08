@@ -78,11 +78,26 @@ class DebugActivity : AppCompatActivity() {
 
     private fun updateParameters() {
         // SeekBar 값(0~10)을 홀수 커널 사이즈(1, 3, 5...)로 변환
-        gaussianBlurKernelSize = binding.seekBarGaussianBlurKernel.progress * 2 + 1
-        medianBlurKernelSize = binding.seekBarMedianBlurKernel.progress * 2 + 1
+        if (binding.seekBarGaussianBlurKernel.progress == 0) {
+            gaussianBlurKernelSize = 0
+        } else {
+            gaussianBlurKernelSize = binding.seekBarGaussianBlurKernel.progress * 2 + 1
+        }
+
+        if (binding.seekBarMedianBlurKernel.progress == 0) {
+            medianBlurKernelSize = 0
+        } else {
+            medianBlurKernelSize = binding.seekBarMedianBlurKernel.progress * 2 + 1
+        }
+
         cannyThreshold1 = binding.seekBarCannyThreshold1.progress.toDouble()
         cannyThreshold2 = binding.seekBarCannyThreshold2.progress.toDouble()
-        closeKernelSize = binding.seekBarCloseKernel.progress * 2 + 1
+
+        if (binding.seekBarCloseKernel.progress == 0) {
+            closeKernelSize = 0
+        } else {
+            closeKernelSize = binding.seekBarCloseKernel.progress * 2 + 1
+        }
 
         // TextView 업데이트
         binding.tvGaussianBlurKernel.text = "가우시안 블러 커널 크기: $gaussianBlurKernelSize"
@@ -145,6 +160,7 @@ class DebugActivity : AppCompatActivity() {
             }
 
             if (binding.radioGroupStep.checkedRadioButtonId == R.id.radioFinal) {
+                val minAreaThreshold = resizedMat.width() * resizedMat.height() * 0.05
                 // 윤곽선을 찾아 원본 이미지 위에 그리기
                 val contours = mutableListOf<MatOfPoint>()
                 val hierarchy = Mat()
@@ -152,12 +168,20 @@ class DebugActivity : AppCompatActivity() {
 
                 // 원본 컬러 이미지에 그리기 위해 src를 복사
                 resizedMat.copyTo(resultMat)
+
+                Log.d("Contours", "찾아낸 윤곽선 개수: ${contours.size}")
+
                 for (contour in contours) {
                     val area = Imgproc.contourArea(contour)
+
                     // 최소 면적 기준 (여기서도 조절 가능하게 만들 수 있음)
-                    if (area > src.total() * 0.01) {
-                        Imgproc.drawContours(resultMat, listOf(contour), -1, Scalar(0.0, 255.0, 0.0), 5)
+                    val color = if (area > minAreaThreshold) {
+                        Scalar(0.0, 255.0, 0.0) // 기준 통과 : 녹색
+                    } else {
+                        Scalar(255.0, 0.0, 0.0) // 기준 미달 : 파란색
                     }
+                    Imgproc.drawContours(resultMat, listOf(contour), -1, color, 2)
+
                     contour.release()
                 }
                 hierarchy.release()
