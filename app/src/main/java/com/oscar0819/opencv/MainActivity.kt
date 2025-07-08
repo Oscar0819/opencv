@@ -129,6 +129,7 @@ class MainActivity : AppCompatActivity() {
         return lineList
     }
 
+    // gray - blur - canny(otsu) - approxPolyDP
     // 연산량이 많으니 백그라운드 스레드로 호출하기
     private fun findDocumentCorners(bitmap: Bitmap): List<PointF>? {
         val mat = Mat()
@@ -139,11 +140,12 @@ class MainActivity : AppCompatActivity() {
         val grayMat = Mat()
         Imgproc.cvtColor(resizedMat, grayMat, Imgproc.COLOR_BGR2GRAY) // 흑백으로 변환
 
-        val kernelSize = getDynamicBlurKernelSize(resizedMat.width())
+        val kernelSize = getDynamicBlurKernelSize(resizedMat.width()).toDouble()
         Log.d("BlurParams", "동적 설정된 블러 커널 크기 : $kernelSize")
 
         val blurredMat = Mat()
-        Imgproc.GaussianBlur(grayMat, blurredMat, Size(5.0, 5.0), 0.0) // 노이즈 제거
+//        Imgproc.GaussianBlur(grayMat, blurredMat, Size(kernelSize, kernelSize), 0.0) // 노이즈 제거
+        Imgproc.medianBlur(grayMat, blurredMat, 1)
 
         /**
          * Otsu의 이진화를 사용하여 최적의 임계값 계산
@@ -177,7 +179,7 @@ class MainActivity : AppCompatActivity() {
 
         // 닫힘 연산 추가
         // 닫힘 연산에 사용할 커널 생성. 커널 크기가 틈을 메우는 강도를 결정합니다.
-        val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(5.0, 5.0))
+        val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(kernelSize, kernelSize))
         // 닫힘 연산을 적용하여 끊어진 엣지를 연결합니다.
         Imgproc.morphologyEx(edgesMat, edgesMat, Imgproc.MORPH_CLOSE, kernel)
 
@@ -197,7 +199,7 @@ class MainActivity : AppCompatActivity() {
             blurredMat.release()
             edgesMat.release()
             hierarchy.release()
-            kernel.release()
+//            kernel.release()
             return null
         }
 
@@ -232,7 +234,7 @@ class MainActivity : AppCompatActivity() {
         blurredMat.release()
         edgesMat.release()
         hierarchy.release()
-        kernel.release()
+//        kernel.release()
 
         val finalPoints = biggestContour?.toList()?.map {
             PointF(

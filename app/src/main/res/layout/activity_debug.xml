@@ -37,7 +37,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
-                <RadioButton android:id="@+id/radioBlurred" android:text="블러" />
+                <RadioButton android:id="@+id/radioGaussianBlurred" android:text="가우시안" />
+                <RadioButton android:id="@+id/radioMedianBlurred" android:text="미디안" />
                 <RadioButton android:id="@+id/radioCanny" android:text="캐니" />
                 <RadioButton android:id="@+id/radioClosed" android:text="닫힘" />
                 <RadioButton android:id="@+id/radioFinal" android:text="최종결과" android:checked="true"/>
@@ -46,13 +47,26 @@
 
             <!-- GaussianBlur 커널 크기 -->
             <TextView
-                android:id="@+id/tvBlurKernel"
+                android:id="@+id/tvGaussianBlurKernel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="블러 커널 크기: 5" />
+                android:text="가우시안 블러 커널 크기: 5" />
             <SeekBar
-                android:id="@+id/seekBarBlurKernel"
+                android:id="@+id/seekBarGaussianBlurKernel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="10" /> <!-- 0~10 -> 1, 3, 5... 21로 변환 -->
+
+            <!-- MedianBlur 커널 크기 -->
+            <TextView
+                android:id="@+id/tvMedianBlurKernel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="미디안 블러 커널 크기: 5" />
+            <SeekBar
+                android:id="@+id/seekBarMedianBlurKernel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:max="10" /> <!-- 0~10 -> 1, 3, 5... 21로 변환 -->

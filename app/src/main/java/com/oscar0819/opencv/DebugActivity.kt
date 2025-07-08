@@ -31,7 +31,8 @@ class DebugActivity : AppCompatActivity() {
     private var originalBitmap: Bitmap? = null // 원본 비트맵 저장
 
     // 현재 SeekBar 값 저장 변수
-    private var blurKernelSize = 5
+    private var gaussianBlurKernelSize = 5
+    private var medianBlurKernelSize = 5
     private var cannyThreshold1 = 50.0
     private var cannyThreshold2 = 150.0
     private var closeKernelSize = 5
@@ -67,7 +68,8 @@ class DebugActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         }
 
-        binding.seekBarBlurKernel.setOnSeekBarChangeListener(seekBarListener)
+        binding.seekBarGaussianBlurKernel.setOnSeekBarChangeListener(seekBarListener)
+        binding.seekBarMedianBlurKernel.setOnSeekBarChangeListener(seekBarListener)
         binding.seekBarCannyThreshold1.setOnSeekBarChangeListener(seekBarListener)
         binding.seekBarCannyThreshold2.setOnSeekBarChangeListener(seekBarListener)
         binding.seekBarCloseKernel.setOnSeekBarChangeListener(seekBarListener)
@@ -76,13 +78,15 @@ class DebugActivity : AppCompatActivity() {
 
     private fun updateParameters() {
         // SeekBar 값(0~10)을 홀수 커널 사이즈(1, 3, 5...)로 변환
-        blurKernelSize = binding.seekBarBlurKernel.progress * 2 + 1
+        gaussianBlurKernelSize = binding.seekBarGaussianBlurKernel.progress * 2 + 1
+        medianBlurKernelSize = binding.seekBarMedianBlurKernel.progress * 2 + 1
         cannyThreshold1 = binding.seekBarCannyThreshold1.progress.toDouble()
         cannyThreshold2 = binding.seekBarCannyThreshold2.progress.toDouble()
         closeKernelSize = binding.seekBarCloseKernel.progress * 2 + 1
 
         // TextView 업데이트
-        binding.tvBlurKernel.text = "블러 커널 크기: $blurKernelSize"
+        binding.tvGaussianBlurKernel.text = "가우시안 블러 커널 크기: $gaussianBlurKernelSize"
+        binding.tvMedianBlurKernel.text = "미디안 블러 커널 크기: $medianBlurKernelSize"
         binding.tvCannyThreshold1.text = "Canny 낮은 임계값: ${cannyThreshold1.toInt()}"
         binding.tvCannyThreshold2.text = "Canny 높은 임계값: ${cannyThreshold2.toInt()}"
         binding.tvCloseKernel.text = "닫힘 커널 크기: $closeKernelSize"
@@ -102,18 +106,28 @@ class DebugActivity : AppCompatActivity() {
             val gray = Mat()
             Imgproc.cvtColor(resizedMat, gray, Imgproc.COLOR_BGR2GRAY)
 
-            val blurred = Mat()
-            if (blurKernelSize > 0) {
-                Imgproc.GaussianBlur(gray, blurred, Size(blurKernelSize.toDouble(), blurKernelSize.toDouble()), 0.0)
+            val gaussianBlurred = Mat()
+            if (gaussianBlurKernelSize > 0) {
+                Imgproc.GaussianBlur(gray, gaussianBlurred, Size(gaussianBlurKernelSize.toDouble(), gaussianBlurKernelSize.toDouble()), 0.0)
             } else {
-                gray.copyTo(blurred)
+                gray.copyTo(gaussianBlurred)
             }
-            if (binding.radioGroupStep.checkedRadioButtonId == R.id.radioBlurred) {
-                blurred.copyTo(resultMat)
+            if (binding.radioGroupStep.checkedRadioButtonId == R.id.radioGaussianBlurred) {
+                gaussianBlurred.copyTo(resultMat)
+            }
+
+            val medianBlurred = Mat()
+            if (medianBlurKernelSize > 0) {
+                Imgproc.medianBlur(gaussianBlurred, medianBlurred, medianBlurKernelSize)
+            } else {
+                gaussianBlurred.copyTo(medianBlurred)
+            }
+            if (binding.radioGroupStep.checkedRadioButtonId == R.id.radioMedianBlurred) {
+                medianBlurred.copyTo(resultMat)
             }
 
             val canny = Mat()
-            Imgproc.Canny(blurred, canny, cannyThreshold1, cannyThreshold2)
+            Imgproc.Canny(medianBlurred, canny, cannyThreshold1, cannyThreshold2)
             if (binding.radioGroupStep.checkedRadioButtonId == R.id.radioCanny) {
                 canny.copyTo(resultMat)
             }
@@ -161,7 +175,8 @@ class DebugActivity : AppCompatActivity() {
             src.release()
             resizedMat.release()
             gray.release()
-            blurred.release()
+            gaussianBlurred.release()
+            medianBlurred.release()
             canny.release()
             closed.release()
             resultMat.release()
